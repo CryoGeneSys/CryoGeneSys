@@ -380,7 +380,7 @@ def maintenance():
         printstring("Test 0",60,40,1,0,0,c)
         printstring("Test 1",60,60,1,0,0,c)
         printstring("Test 2",60,80,1,0,0,c)
-        a = HW.keyCheck()
+        
         if(a == 1):
             b = b - 1
             if(b < 0):
@@ -408,11 +408,16 @@ def maintenance():
                 print("Test 1 is good")
             if(b == 2):
                 print("Test 2 is good")
+        if(a == 9):
+            #This is to go back to main menu alon with th eneeded screen update
+            run = False
+
         
         print(b)
         LCD.show()
-        if(a == 9):
-            break
+        a = HW.keyCheck()
+
+
 def records():
     run = True
     while run:
@@ -439,18 +444,6 @@ pwm = PWM(Pin(BL)) # Screen Brightness
 pwm.freq(1000)
 pwm.duty_u16(32768) # max 65535 - mid value
 
-# Define pins for buttons and Joystick
-keyA = Pin(15,Pin.IN,Pin.PULL_UP) # Normally 1 but 0 if pressed
-keyB = Pin(17,Pin.IN,Pin.PULL_UP)
-keyX = Pin(19,Pin.IN,Pin.PULL_UP)
-keyY= Pin(21,Pin.IN,Pin.PULL_UP)
-
-up = Pin(2,Pin.IN,Pin.PULL_UP)
-down = Pin(18,Pin.IN,Pin.PULL_UP)
-left = Pin(16,Pin.IN,Pin.PULL_UP)
-right = Pin(20,Pin.IN,Pin.PULL_UP)
-ctrl = Pin(3,Pin.IN,Pin.PULL_UP)
-
 LCD = vd.LCD_1inch3() # Initialise the display
 LCD.fill(vd.colour(0,0,0)) # BLACK
 LCD.show()
@@ -458,62 +451,72 @@ LCD.show()
 # ======= Menu ==============  
 def mainMenu():
     m = 0
+    n = 0
+    red = colour(255,0,0)
     yellow = colour(255,255,0)
     blue = colour(0,0,255)
     running = True
     while running:
-        c = colour(255,0,0) 
+        LCD.fill(0)
+        c = red
         printstring("DMRS for V.240",17,10,2,0,0,c)
-        c = yellow
-        if m == 0:
-            c = blue
+        c = blue 
         printstring("Diagnostics",35,50,2,0,0,c)
-        c = yellow
-        if m == 1:
-            c = blue
         printstring("Maintenance",35,80,2,0,0,c)
-        c = yellow
-        if m == 2:
-            c = blue
         printstring("Records",35,110,2,0,0,c)
-        c = yellow
-        if m == 3:
-            c = blue
         printstring("Settings",35,140,2,0,0,c)
-        c = yellow
-        if m == 4:
-            c = blue
-        printstring("Quit Program",35,170,2,0,0,c)
+        printstring("Quit Program",35,170,2,0,0,c) 
+        
+        if(m == 0):
+            pass
+        if(m == 1):
+            n = n - 1
+            if(n < 0):
+                n = 0
+        if(m == 2):
+            n = n + 1
+            if(n > 4):
+                n = 4
 
-        LCD.show()
 
-        # Check joystick UP/DOWN/CTRL
-        if(up.value() == 0):
-            m = m - 1
-            if m < 0:
-                m = 0
-            
-        elif(down.value() == 0):
-            m = m + 1
-            if m > 4:
-                m = 4
-                       
-        elif(ctrl.value() == 0):
-            if(m == 4): # Exit loop and HALT program
-                running = False
-            if(m == 3):
-                settings()
-                LCD.fill(0)
-            if(m == 2):
-                records()
-                LCD.fill(0)
-            if(m == 1):
-                maintenance()
-                LCD.fill(0)
-            if(m == 0):
+        c = red 
+        if(n == 0):
+            printstring("*",20,50,1,0,0,c)
+            print(n)
+        if(n == 1):
+            printstring("*",20,80,1,0,0,c)
+            print(n)
+        if(n == 2):
+            printstring("*",20,110,1,0,0,c)
+            print(n)
+        if(n == 3):
+            printstring("*",20,140,1,0,0,c)
+            print(n)
+        if(n == 4):
+            printstring("*",20,170,1,0,0,c)
+            print(n)
+        
+        if(m == 5):
+            if(n == 0):
+                print("Diagnostics Run")
                 diagnostics()
-                LCD.fill(0)
-                
+            if(n == 1):
+                print("Maintenance Run")
+                maintenance()
+            if(n == 2):
+                print("Records Run")
+                records()
+            if(n == 3):
+                print("Settings Run")
+                settings()
+            if(n == 4):
+                print("Halting")
+                break
+        
+        LCD.show()
+        #This is below this lcd.show for a reason. If not the device boots to a black screen bc it hangs on hw.keycheck until an input is received.
+        m = HW.keyCheck()
+
 
 # Finish
     LCD.fill(0)
