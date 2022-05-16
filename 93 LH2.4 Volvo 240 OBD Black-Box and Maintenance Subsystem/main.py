@@ -255,131 +255,21 @@ green = colour(0,255,0)
 red = colour(255,0,0)
 
 def fuelMenu():
-    m = 0
-    yellow = colour(255,255,0)
-    blue = colour(0,0,255)
-    green = colour(0,255,0)
-    red = colour(255,0,0)
-    run1 = True
-    while run1:
-        print("fuel")
-        LCD.fill(0)
-        c = colour(255,0,0)
-        printstring("Fuel Injection",20,20,2,0,0,c)
-        c = yellow
-        if m == 0:
-            c = blue
-        printstring("1: Pull/Reset Codes",25,50,1,0,0,c)
-        c = yellow
-        if m == 1:
-            c = blue
-        printstring("2: Check ECU Inputs",25,80,1,0,0,c)
-        c = yellow
-        if m == 2:
-            c = blue
-        printstring("3: Check ECU Outputs",25,110,1,0,0,c)
-        c = green
-        printstring("Main",200,200,1,0,0,c)
-        printstring("Menu",200,210,1,0,0,c)
-        c = yellow
-        LCD.show()
-        
-        # Check joystick UP/DOWN/CTRL
-        if(up.value() == 0):
-            m = m - 1
-            if m < 0:
-                m = 0
-            
-        elif(down.value() == 0):
-            m = m + 1
-            if m > 2:
-                m = 2
-                       
-        elif(ctrl.value() == 0):
-            if(m == 3):
-                pass
-                LCD.fill(0)
-            if(m == 2):
-                pass
-                LCD.fill(0)
-            if(m == 1):
-                pass
-                LCD.fill(0)
-            if(m == 0):
-                #fi.fuelFunction1()
-                LCD.fill(0)
-            LCD.show()
-        if(HW.keyCheck() == 9):
-            break
-
-
-def diagnostics():
-    m = 0
-    run = True
-    print("diag")
-    while run:
-        LCD.fill(0)
-        c = colour(255,0,0)
-        printstring("Diagnostics",20,20,2,0,0,c)
-        c = yellow
-        if m == 0:
-            c = blue
-        printstring("Fuel Injection System",25,50,1,0,0,c)
-        c = yellow
-        if m == 1:
-            c = blue
-        printstring("Ignition System",25,80,1,0,0,c)
-        c = yellow
-        if m == 2:
-            c = blue
-        printstring("Anti-Lock Braking System",25,110,1,0,0,c)
-        c = green
-        printstring("Back",200,200,1,0,0,c)
-        c = yellow
-        LCD.show()
-        
-        # Check joystick UP/DOWN/CTRL
-        if(up.value() == 0):
-            m = m - 1
-            if m < 0:
-                m = 0
-            
-        elif(down.value() == 0):
-            m = m + 1
-            if m > 2:
-                m = 2
-                       
-        elif(ctrl.value() == 0):
-            if(m == 3):
-                pass
-                LCD.fill(0)
-            if(m == 2):
-                pass
-                LCD.fill(0)
-            if(m == 1):
-                pass
-                LCD.fill(0)
-            if(m == 0):
-                fuelMenu()
-                LCD.fill(0)
-            LCD.show()
-        if(HW.keyCheck() == 9):
-            break
-        
-        
-def maintenance():
-    run = True
+    run2 = True
     a = 0
     b = 0
     LCD.fill(0)
-    while run:
+    a = HW.keyCheck()
+    while run2:
         LCD.fill(0)
         c = colour(0,255,0)
-        printstring("Maintenance",50,20,2,0,0,c)
+        printstring("Fuel Injection",30,20,2,0,0,c)
         c = blue #string,xpos,ypos,size,charupdate,strupdate,c
-        printstring("Test 0",60,40,1,0,0,c)
-        printstring("Test 1",60,60,1,0,0,c)
-        printstring("Test 2",60,80,1,0,0,c)
+        printstring("Pull/Reset Codes",60,40,1,0,0,c)
+        printstring("Check ECU Inputs",60,60,1,0,0,c)
+        printstring("Check ECU Outputs",60,80,1,0,0,c)
+        c = green
+        printstring("Back",200,200,1,0,0,c)
         
         if(a == 1):
             b = b - 1
@@ -403,11 +293,65 @@ def maintenance():
         LCD.show()    
         if(a == 5):
             if(b == 0):
-                print("Test 0 is good")
+                print("Selected Pull/Reset Codes")
             if(b == 1):
-                print("Test 1 is good")
+                print("Selected Check ECU Inputs")
             if(b == 2):
-                print("Test 2 is good")
+                print("Selected Check ECU Outputs")
+        if(a == 9):
+            #This is to go back to main menu alon with th eneeded screen update
+            run2 = False
+
+        
+        print(b)
+        LCD.show()
+        #a = HW.keyCheck()
+    LCD.fill(0)
+
+def diagnostics():
+    run = True
+    a = 0
+    b = 0
+    LCD.fill(0)
+    while run:
+        LCD.fill(0)
+        c = colour(0,255,0)
+        printstring("Diagnostics",50,20,2,0,0,c)
+        c = blue #string,xpos,ypos,size,charupdate,strupdate,c
+        printstring("Fuel Injection System",30,40,1,0,0,c)
+        printstring("Ignition System",30,60,1,0,0,c)
+        printstring("Anti-Lock Breaking System",30,80,1,0,0,c)
+        c = green
+        printstring("Back",200,200,1,0,0,c)
+        
+        if(a == 1):
+            b = b - 1
+            if(b < 0):
+                b = 0
+        if(a == 2):
+            b = b + 1
+            if(b > 2):
+                b = 2
+
+        c = red 
+        if(b == 0):
+            printstring("*",20,40,1,0,0,c)
+            print(b)
+        if(b == 1):
+            printstring("*",20,60,1,0,0,c)
+            print(b)
+        if(b == 2):
+            printstring("*",20,80,1,0,0,c)
+            print(b)
+        LCD.show()    
+        if(a == 5):
+            if(b == 0):
+                print("Selected Fuel Injection")
+                fuelMenu()
+            if(b == 1):
+                print("Selected Ignition")
+            if(b == 2):
+                print("Selected ABS")
         if(a == 9):
             #This is to go back to main menu alon with th eneeded screen update
             run = False
@@ -417,6 +361,64 @@ def maintenance():
         LCD.show()
         a = HW.keyCheck()
 
+        
+def maintenance():
+    run = True
+    a = 0
+    b = 0
+    LCD.fill(0)
+    while run:
+        LCD.fill(0)
+        c = colour(0,255,0)
+        printstring("Maintenance",50,20,2,0,0,c)
+        c = blue #string,xpos,ypos,size,charupdate,strupdate,c
+        printstring("View Current Warnings",30,40,1,0,0,c)
+        printstring("View Part Health",30,60,1,0,0,c)
+        printstring("View Fluid Health",30,80,1,0,0,c)
+        printstring("Enter New Repair/Change",30,100,1,0,0,c)
+        c = green
+        printstring("Back",200,200,1,0,0,c)
+        
+        if(a == 1):
+            b = b - 1
+            if(b < 0):
+                b = 0
+        if(a == 3):
+            b = b + 1
+            if(b > 3):
+                b = 3
+
+        c = red 
+        if(b == 0):
+            printstring("*",20,40,1,0,0,c)
+            print(b)
+        if(b == 1):
+            printstring("*",20,60,1,0,0,c)
+            print(b)
+        if(b == 2):
+            printstring("*",20,80,1,0,0,c)
+            print(b)
+        if(b == 3):
+            printstring("*",20,100,1,0,0,c)
+
+        LCD.show()    
+        if(a == 5):
+            if(b == 0):
+                print("View Current Warnings")
+            if(b == 1):
+                print("View Part Health")
+            if(b == 2):
+                print("View Fluid Health")
+            if(b == 3):
+                print("View New Repair/Change")
+        if(a == 9):
+            #This is to go back to main menu alon with th eneeded screen update
+            run = False
+
+        
+        print(b)
+        LCD.show()
+        a = HW.keyCheck()
 
 def records():
     run = True
