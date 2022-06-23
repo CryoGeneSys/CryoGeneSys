@@ -5,9 +5,9 @@ import MenuPrompts as prompt
 import ProbePassthrough as probe
 import ButtonPassthrough as button
 import LEDPassthrough as ledp
-import time
+import utime as time
 import CarInfo
-import UserButtons as UB
+import HardwareControl as HW
 
 fuelDictionary = {
   "111": "No Faults Detected in ECU",
@@ -80,7 +80,8 @@ def fuelCode(led_code): #This function is probably superfluous with the dictiona
 
 ###Erase Codes
 def clear():
-    prompt.ignitionPrompt()
+    c = colour(255,0,0)
+    printstring("Turn Ignition to Position II",20,20,2,0,0,c)
     probe.port2()
     button.clearPress()
     time.sleep(4)

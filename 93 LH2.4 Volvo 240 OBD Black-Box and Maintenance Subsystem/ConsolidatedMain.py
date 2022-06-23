@@ -3,9 +3,11 @@
 #EZK 116 Ignition System, ABS System, and AW70 Automatic Transmission.
 #Made in Thonny, Sublime Text 3, and Microsoft Visual Studio Code.
 #Platformed on a Raspberry Pi Pico
-#Made By: Jacob Whittington, Screename:Cryo_Gen, March 2022
+#Made By: Jacob Whittington, Screename:Cryo_Gen/CryoGeneSys, March 2022
 #Using the Hardware Driver and Display Code Provided By: Tony Goodhew 19th Aug 2021
 #Via his Instructable: Workout for Waveshare 1.3" IPS LCD Display Module for Raspberry Pi Pico (240x240)
+#As well as the buzzer driver by: Avram Piltch of Tom's Hardware
+#Via his article: How to Use a Buzzer to Play Music with Raspberry Pi Pico
 #Lets Keep These Turbo-Bricks Going To A Million Miles!
 
 from machine import Pin,SPI,PWM
@@ -41,6 +43,9 @@ OBD_Probe3 = Pin(6, Pin.OUT)
 OBD_Probe5 = Pin(7, Pin.OUT)
 OBD_Button = Pin(14, Pin.OUT)
 
+buzzer = Pin(27, Pin.OUT)
+speedometer = Pin(26, Pin.IN, PULL_UP)
+
 pwm = PWM(Pin(BL)) # Screen Brightness
 pwm.freq(1000)
 pwm.duty_u16(32768) # max 65535 - mid value
@@ -49,8 +54,39 @@ LCD = vd.LCD_1inch3() # Initialise the display
 LCD.fill(vd.colour(0,0,0)) # BLACK
 LCD.show()
 
+#-------------------Begin Buzzer Driver By Avram Piltch of Tom's Hardware---------------#
+#Code has been modified: I changed some variable and constant names
+#So that they were easier to remember going forward.
+#This will be used as the alert tone song for hardware maintenance. Intitalized only at
+#Startup for not only code simplicity and speed but to also not distract the driver while
+#vehicle is in motion.
 
-#--------------------Begin Character Map and Print to Screen Functions -----------------#
+notes = {
+"F5": 698,
+"G5": 784,
+"C6": 1047
+}
+
+song = ["F5","G5","C6","F5","G5","C6","rest","F5","G5","C6","F5","G5","C6"]
+
+def playnote(frequency):
+    buzzer.duty_u16(1000)
+    buzzer.freq(frequency)
+
+def rest():
+    buzzer.duty_u16(0)
+
+def play(alert):
+    for i in range(len(mysong)):
+        if (mysong[i] == "rest"):
+            rest()
+        else:
+            playnote(notes[alert[i]])
+        sleep(0.3)
+    rest()
+#play(song)
+#----------------------------- End Buzzer Driver ---------------------------------------#
+################## Begin Character Map and Print to Screen Functions ####################
 #------------------------------ Begin Tony's Code --------------------------------------#
 
 def colour(R,G,B): # Convert 3 byte colours to 2 byte colours, RGB565
@@ -286,9 +322,8 @@ def printstring(string,xpos,ypos,size,charupdate,strupdate,c):
 # a copy of his original code in the repository for comparison. I wouldnt have been able to use this
 # screen hardware without the resources he provided. A big thank you to the legend himself.
 #------------------------------ End Tony's Code ----------------------------------------#
-
-##############################Begin Hardware Driver #######################################
-#-----------------------------------By Jacob W. ------------------------------------------#
+############################# Begin Hardware Driver #####################################
+#------------------------------ Jacob's Code Begins ------------------------------------#
 
 #This checks for the next state of the keys and returns the respective key identifing integer.
 #The 100 millisecond delay added at the end is so the hardware has time to register the input.
@@ -358,6 +393,12 @@ def setProbe(probe):
         OBD_Probe3.value(0)
         OBD_Probe5.value(1)
         print("Probe 5 Enabled")
+    #None, Used for Cleanup
+    if probe == 0:
+        OBD_Probe2.value(0)
+        OBD_Probe3.value(0)
+        OBD_Probe5.value(0)
+        print("No Probes Enabled")
 
 #Emulates the pressing of OBD Button
 def OBDSendCode(x):
@@ -486,10 +527,40 @@ codeGetDictionary = {
 
 }
 
+def rapidFlashTest():
+    rapidFlashRunning = True
+    rapidFlashAccumulator = 0
+    timeDivisor = 0
+    rapidInitialGet = True
+    while rapidInitialGet:
+        if OBD_LED.value() 0:
+            rapidInitialGet = False
+    while rapidFlashRunning:
+        if OBD_LED.value() == 0:
+            rapidFlashAccumulator += 1
+        timeDivisor += 1
+        utime.sleep_ms(62) #1/16th of a second rounded down. may have to adjust
+        x = rapidFlashAccumulator / timeDivisor
+        if x < 0.4: #if we receive a full quarter second with no input we consider rapidflash state over. change this integer to tune and zero in on this detection.
+            rapidFlashRunning = False
+    return
+        
+
 ########################### End Hardware Driver #################################
+########################### Prompt Definitions Begin ############################
+
+def ignitionPrompt():
+    LCD.fill(0)
+    c = red
+    printstring("Turn Ignition to Position II",20,20,2,0,0,c)
+    printstring("Then Hit Enter", 40,40,2,0,0,c)
+    c = green
+    printstring("Back",200,200,1,0,0,c)
+    c = red
+    LCD.show()
 
 
-
+########################### End Prompt Definitions ##############################
 ############################## Fuel Injection Function Begin #################################
 def fuelMenu():
     run2 = True
@@ -579,8 +650,9 @@ checkEngineLightDictionary = {
     "off": "Check Engine Light Should Be Off",
     "on": "Check Engine Light Should Be On"
     } #If getting LH2.4 errors on LH3.1 or vice versa, Shit is really really bad. Good luck!
-    
-def fuelCode(led_code): #This function is probably superfluous with the dictionary but whatever
+
+#This function is probably superfluous with the dictionary but whatever   
+def fuelCode(led_code): 
     if led_code == 111:
         return fuelDictionary["111"], checkEngineLightDictionary["off"]
     elif led_code == 112:
@@ -624,14 +696,7 @@ def fuelCode(led_code): #This function is probably superfluous with the dictiona
 
 ###Erase Codes
 def fuelClear():
-    LCD.fill(0)
-    c = red
-    printstring("Turn Ignition to Position II",20,20,2,0,0,c)
-    printstring("Then Hit Enter", 40,40,2,0,0,c)
-    c = green
-    printstring("Back",200,200,1,0,0,c)
-    c = red
-    LCD.show()
+    ignitionPrompt()
     a = keyCheck()
     if a == 5:
         setProbe(2)
@@ -656,6 +721,7 @@ def fuelClear():
             else:
                 pass
     if a == 9:
+        setProbe(0)
         LCD.fill(0)
         fuelmenu()
 
@@ -663,29 +729,78 @@ def fuelClear():
 def fuelFunction1():
     a = 0
     b = 0
+    LCD.fill(0)
     while b < 3:
         if b == 0:
-            print("This Function Will Pull The First Stored Code If Any")
+            LED.fill(0)
+            c = red
+            printstring("Fuel ECU Code Check",30,10,2,0,0,c)
+            c = blue
+            printstring("This Function Will Pull The First Stored Code If Any",10,20,1,0,0,c)
+            c = green
+            printstring("Next",200,50,1,0,0,c)
+            printstring("Back",200,200,1,0,0,c)
+            LCD.show()
+            if keyCheck() == 6:
+                ignitionPrompt()
+                if keyCheck() == 6:
+                    setProbe(2)
+                    utime.sleep(2)
+                    OBDSendCode(1)
+                    utime.sleep(2)
+                    LCD.fill(0)
+                    printstring("Getting Code.....", 75,75,2,0,0,c)
+                    LCD.show()
+                    x = OBDGetCode()
+                    LCD.fill(0)
+                    c = (95,215,95)
+                    printstring(fuelCode(x), 10,10,1,0,0,c)
+                    printstring("Next",200,50,1,0,0,c))
+                    LCD.show()
+                    if keyCheck() == 6:
+                        b =+ 1
+
+            if keyCheck() == 9:
+                setProbe(0)
+                b = 4
         else:
-            print("Do you wish to check for anymore stored codes?") #A yes B No C should be Back and D should be Home
-            if UB.keyA.value() == 0:
-                c = True
-            if UB.keyB.value() == 0:
-                c = False
-        prompt.ignitionPrompt() #all prompts should have wait
-        probe.port2() #as opposed to port3 or port6
-        button.press() #as opposed to clearPress
-        ledp.get(a)
-        print(fuelCode(a))
-        if c == False:
-            probe.none()
-            break
-        b =+ 1
+            LCD.fill(0)
+            c = red
+            printstring("Fuel ECU Code Check",30,10,2,0,0,c)
+            c = blue
+            printstring("Do you wish to check for any more stored codes?",20,40,1,0,0,c)
+            c = green
+            printstring("Yes",200,50,1,0,0,c)
+            printstring("No-Back",200,100,1,0,0,c)            
+            LCD.show()
+            if keyCheck() == 6:
+                ignitionPrompt()
+                if keyCheck() == 6:
+                    setProbe(2)
+                    utime.sleep(2)
+                    OBDSendCode(1)
+                    utime.sleep(2)
+                    LCD.fill(0)
+                    printstring("Getting Code.....", 75,75,2,0,0,c)
+                    LCD.show()
+                    x = OBDGetCode()
+                    LCD.fill(0)
+                    c = (95,215,95)
+                    printstring(fuelCode(x), 10,10,1,0,0,c)
+                    printstring("Next",200,50,1,0,0,c))
+                    LCD.show()
+                    if keyCheck() == 6:
+                        b =+ 1
+
+            if keyCheck() == 7:
+                b = 4
+    setProbe(0)
+    fuelMenu()
 
 ###Function 2: Testing ECU Inputs
 def fuelFunction2():
     print("This tests these ECU inputs: Throttle Switch/Sensor, Engine RPM Signal, AC Microswitch Signal, and AC Compressor Signal.")
-    prompt.ignitionPrompt()
+    ignitionPrompt()
     probe.port2()
 #Full Throttle Test Begin
     a = 0
@@ -802,7 +917,66 @@ def fuelFunction2():
 def fuelFunction3():
 
 ######################## Fuel Injection Function END ##########################
+########################### Ignition System Begin #############################
 
+########################### Ignition System Ends ##############################
+############################ ABS System Begins ################################
+
+def ABSFunction1():
+    pass
+
+ABSDictionary = {
+    "111": "No Error Code Set",
+    "121": "Left side front wheel sensor: faulty signal at speed less than 40km/h(25 MPH)",
+    "122": "Right side front wheel sensor: faulty signal at speed less than 40km/h(25 MPH)",
+    "123": "Left side rear wheel sensor: faulty signal at speed less than 40km/h(25 MPH)",
+    "124": "Right side rear wheel sensor: faulty signal at speed less than 40km/h(25 MPH)",
+    "125": "Signal faulty from at least one wheel sensor for a long period",
+    "135": "Control Module (CM) faulty",
+    "141": "Faulty pedal sensor: shorted to ground or supply",
+    "142": "Faulty stop (brake) lamp switch: open circuit",
+    "143": "Control Module (CM) faulty",
+    "144": "Brake discs overheated",
+    "151": "Left front wheel sensor: open circuit or short-circuit to battery voltage",
+    "152": "Right front wheel sensor: open circuit or short-circuit to battery voltage",
+    "155": "Rear axle sensor: open circuit or short-circuit to battery voltage",
+    "211": "Left front wheel sensor: no signal on moving off",
+    "212": "Right front wheel sensor: no signal on moving off",
+    "213": "Left rear wheel sensor: no signal on moving off",
+    "214": "Right rear wheel sensor: no signal on moving off",
+    "215": "Valve relay: open circuit or short-circuit",
+    "221": "Left front wheel sensor: ABS operation signal missing",
+    "222": "Right front wheel sensor: ABS operation signal missing",
+    "223": "Left rear wheel sensor: ABS operation signal missing",
+    "224": "Right rear wheel sensor: ABS operation signal missing",
+    "231": "Left front wheel sensor: signal missing",
+    "232": "Right front wheel sensor: signal missing",
+    "235": "Rear axle sensor: signal missing",
+    "311": "Left front wheel sensor: open circuit or short-circuit",
+    "312": "Right front wheel sensor: open circuit or short-circuit",
+    "313": "Left rear wheel sensor: open circuit or short-circuit",
+    "314": "Right rear wheel sensor: open circuit or short-circuit",
+    "321": "Left front wheel sensor: irregular interference at speeds over 40 km/h(25 MPH)",
+    "322": "Right front wheel sensor: irregular interference at speeds over 40 km/h(25 MPH)",
+    "323": "Left rear wheel sensor: irregular interference at speeds over 40 km/h(25 MPH)",
+    "324": "Right rear wheel sensor: irregular interference at speeds over 40 km/h(25 MPH)",
+    "411": "Left front wheel inlet valve: open circuit or short circuit",
+    "412": "Left front return valve: open circuit or short circuit",
+    "413": "Right front wheel inlet valve: open circuit or short circuit",
+    "414": "Right front return valve: open circuit or short circuit",
+    "415": "Rear valve: open circuit or short circuit",
+    "421": "Rear wheel circuit inlet valve: open circuit or short circuit",
+    "422": "Rear wheel circuit return valve: open circuit or short circuit",
+    "423": "Traction control system (TRACS) valve: open circuit or short circuit",
+    "424": "Pressure switch for TRACS: faulty or short circuit",
+    "441": "Control Module (CM) faulty",
+    "442": "Pump pressure low",
+    "443": "Pump motor/relay: electrical or mechanical fault",
+    "444": "No power supply to valves in hydraulic unit"
+    }
+
+
+############################# ABS System Ends #################################
 ############################## Secondary Menus ################################
 
 def diagnostics():
@@ -847,13 +1021,14 @@ def diagnostics():
                 fuelMenu()
             if(b == 1):
                 print("Selected Ignition")
+                ignitionMenu()
             if(b == 2):
                 print("Selected ABS")
+                ABSMenu()
         if(a == 9):
-            #This is to go back to main menu alon with th eneeded screen update
+            #This is to go back to main menu along with the needed screen update
             run = False
-
-        
+      
         print(b)
         LCD.show()
         a = keyCheck()
@@ -939,7 +1114,7 @@ def settings():
             break
 
 
-# ======= Menu ==============  
+# ================================= The Main Menu ======================================= #
 def mainMenu():
     m = 0
     n = 0
